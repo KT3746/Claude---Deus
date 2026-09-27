@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-export const MODELO = process.env.CLAUDE_MODEL || "claude-opus-5";
+export const MODELO = "claude-opus-5";
 
 export const SYSTEM_PROMPT = `Você é um professor de estudos bíblicos que ajuda pessoas a entender a Bíblia em profundidade. Responda sempre em português do Brasil.
 
@@ -31,8 +31,8 @@ const MAX_MENSAGENS = 40;
 const MAX_CARACTERES = 8000;
 
 /**
- * Valida o histórico enviado pelo navegador. A primeira mensagem do usuário é
- * montada no servidor a partir da passagem; as seguintes são perguntas livres.
+ * Monta a conversa: a primeira mensagem do usuário vem da passagem; `historico`
+ * guarda as trocas seguintes, que devem alternar assistant, user, assistant…
  */
 export function montarMensagens({ referencia, texto, historico = [] }) {
   if (typeof referencia !== "string" || !referencia.trim()) throw new Error("Referência ausente.");
@@ -51,25 +51,46 @@ export function montarMensagens({ referencia, texto, historico = [] }) {
     if (m?.role !== esperado || typeof m.content !== "string" || !m.content.trim()) {
       throw new Error("Histórico inválido.");
     }
-    if (m.content.length > MAX_CARACTERES * 4) throw new Error("Mensagem longa demais.");
     mensagens.push({ role: m.role, content: m.content });
   }
   if (mensagens.at(-1).role !== "user") throw new Error("A última mensagem deve ser do usuário.");
   return mensagens;
 }
 
-let client;
-function getClient() {
-  client ??= new Anthropic();
-  return client;
+/** Traduz erros da API em mensagens que um leigo entende. */
+export function explicarErro(err) {
+  if (err instanceof Anthropic.AuthenticationError) {
+    return "A chave da API está errada ou foi apagada. Abra ⚙️ Configurações e cole a chave de novo.";
+  }
+  if (err instanceof Anthropic.PermissionDeniedError) {
+    return "Esta chave não tem permissão para usar o Claude. Confira a chave em console.anthropic.com.";
+  }
+  if (err instanceof Anthropic.RateLimitError) {
+    return "Muitos pedidos em pouco tempo. Espere um minuto e tente de novo.";
+  }
+  if (err instanceof Anthropic.BadRequestError && /credit|balance|billing/i.test(err.message)) {
+    return "Sua conta da Anthropic está sem créditos. Adicione créditos em console.anthropic.com (Billing).";
+  }
+  if (err instanceof Anthropic.APIConnectionError) {
+    return "Sem conexão com a internet. O estudo com IA precisa de internet.";
+  }
+  if (err instanceof Anthropic.InternalServerError) {
+    return "O serviço do Claude está instável agora. Tente novamente em alguns minutos.";
+  }
+  return `Erro ao gerar o estudo: ${err?.message ?? err}`;
 }
 
 /**
  * Transmite a resposta do Claude chamando `aoTexto` para cada trecho.
- * Devolve o motivo de parada ("end_turn", "refusal", "max_tokens"...).
+ * Devolve o motivo de parada ("end_turn", "refusal", "max_tokens"…).
+ *
+ * A chamada sai direto do navegador com a chave que a pessoa colou nas
+ * configurações. Isso só é aceitável porque o app é de uso pessoal: a chave
+ * fica apenas neste aparelho e nunca vai para o repositório.
  */
-export async function estudar(mensagens, aoTexto, { signal } = {}) {
-  const stream = getClient().beta.messages.stream(
+export async function estudar(mensagens, aoTexto, { apiKey, signal } = {}) {
+  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+  const stream = client.beta.messages.stream(
     {
       model: MODELO,
       max_tokens: 64000,

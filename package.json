@@ -1,11 +1,10 @@
 {
   "name": "estudo-biblico",
   "version": "0.1.0",
-  "description": "Estudo bíblico com IA: contexto histórico, palavras no original, referências cruzadas e leituras de diferentes tradições.",
-  "main": "src/server.js",
+  "description": "App pessoal de estudo bíblico com IA, publicado no GitHub Pages.",
   "scripts": {
-    "start": "node --env-file-if-exists=.env src/server.js",
-    "dev": "node --watch --env-file-if-exists=.env src/server.js",
+    "build": "node scripts/build.mjs",
+    "dev": "npm run build && npx --yes serve@14 docs -l 3000",
     "test": "node --test"
   },
   "repository": {
@@ -18,12 +17,14 @@
   "homepage": "https://github.com/KT3746/Claude---Deus#readme",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
-    "express": "^5.2.1",
     "marked": "^18.0.14"
   },
   "type": "module",
   "private": true,
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

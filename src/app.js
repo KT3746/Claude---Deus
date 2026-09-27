@@ -1,4 +1,7 @@
-import { marked } from "/vendor/marked/marked.esm.js";
+import { marked } from "marked";
+import { LIVROS, validarCapitulo } from "./livros.js";
+import { buscarCapitulo } from "./biblia.js";
+import { estudar, explicarErro, montarMensagens } from "./estudo.js";
 
 // ---------- Markdown seguro (a resposta do modelo nunca vira HTML bruto) ----------
 const escapar = (s) =>
@@ -16,7 +19,7 @@ marked.use({
   },
 });
 
-// ---------- Estado ----------
+// ---------- Elementos ----------
 const $ = (id) => document.getElementById(id);
 const el = {
   livro: $("livro"), capitulo: $("capitulo"), anterior: $("anterior"), proximo: $("proximo"),
@@ -24,17 +27,12 @@ const el = {
   selecao: $("selecao"), selecaoRef: $("selecao-ref"), limpar: $("limpar"), estudar: $("estudar"),
   conversa: $("conversa"), form: $("pergunta-form"), pergunta: $("pergunta"), enviar: $("enviar"),
   qtdSalvos: $("qtd-salvos"), listaSalvos: $("lista-salvos"),
+  abrirConfig: $("abrir-config"), config: $("config"), configForm: $("config-form"),
+  chave: $("chave"), apagarChave: $("apagar-chave"), statusChave: $("status-chave"),
+  avisoChave: $("aviso-chave"),
 };
 
-let livros = [];
-let atual = { livro: null, capitulo: 1, versiculos: [] };
-const selecionados = new Set();
-// Sessão de estudo: a primeira mensagem do usuário é montada no servidor a partir
-// da passagem; `historico` guarda as trocas seguintes (assistant, user, assistant, …).
-let sessao = null;
-let ocupado = false;
-
-// ---------- Armazenamento local (estudos salvos e última leitura) ----------
+// ---------- Armazenamento local (fica só neste aparelho) ----------
 const armazenamento = {
   ler(chave, padrao) {
     try { return JSON.parse(localStorage.getItem(chave)) ?? padrao; } catch { return padrao; }
@@ -42,20 +40,51 @@ const armazenamento = {
   gravar(chave, valor) {
     try { localStorage.setItem(chave, JSON.stringify(valor)); } catch { /* modo privado etc. */ }
   },
+  apagar(chave) {
+    try { localStorage.removeItem(chave); } catch { /* ignora */ }
+  },
 };
+
+// ---------- Estado ----------
+let atual = { livro: null, capitulo: 1, versiculos: [] };
+const selecionados = new Set();
+// Sessão de estudo: `historico` guarda as trocas depois da passagem (assistant, user, assistant, …).
+let sessao = null;
+let ocupado = false;
+
+// ---------- Configurações (chave da API) ----------
+const chaveApi = () => armazenamento.ler("chaveApi", "");
+
+function atualizarStatusChave() {
+  const chave = chaveApi();
+  el.statusChave.textContent = chave
+    ? `Chave salva neste aparelho (termina em …${chave.slice(-4)}).`
+    : "Nenhuma chave salva ainda.";
+  el.apagarChave.hidden = !chave;
+  el.avisoChave.hidden = Boolean(chave);
+}
+
+function abrirConfiguracoes() {
+  el.chave.value = "";
+  atualizarStatusChave();
+  el.config.showModal();
+}
 
 // ---------- Leitura ----------
 function preencherCapitulos() {
   el.capitulo.innerHTML = "";
-  for (let c = 1; c <= atual.livro.capitulos; c++) {
-    el.capitulo.add(new Option(String(c), String(c)));
-  }
+  for (let c = 1; c <= atual.livro.capitulos; c++) el.capitulo.add(new Option(String(c), String(c)));
   el.capitulo.value = String(atual.capitulo);
 }
 
 async function carregarCapitulo(livroId, capitulo) {
-  atual.livro = livros.find((l) => l.id === livroId) ?? livros[0];
-  atual.capitulo = Math.min(Math.max(1, capitulo), atual.livro.capitulos);
+  let alvo;
+  try {
+    alvo = validarCapitulo(livroId, capitulo);
+  } catch {
+    alvo = { livro: LIVROS.find((l) => l.id === "JHN"), capitulo: 3 };
+  }
+  atual = { livro: alvo.livro, capitulo: alvo.capitulo, versiculos: [] };
   el.livro.value = atual.livro.id;
   preencherCapitulos();
   limparSelecao();
@@ -63,18 +92,16 @@ async function carregarCapitulo(livroId, capitulo) {
 
   el.titulo.textContent = `${atual.livro.nome} ${atual.capitulo}`;
   el.texto.innerHTML = '<p class="carregando">Carregando…</p>';
-  el.anterior.disabled = atual.livro === livros[0] && atual.capitulo === 1;
-  el.proximo.disabled = atual.livro === livros.at(-1) && atual.capitulo === atual.livro.capitulos;
+  el.anterior.disabled = atual.livro === LIVROS[0] && atual.capitulo === 1;
+  el.proximo.disabled = atual.livro === LIVROS.at(-1) && atual.capitulo === atual.livro.capitulos;
 
-  const pedido = `${atual.livro.id}.${atual.capitulo}`;
+  const pedido = atual;
   try {
-    const res = await fetch(`/api/capitulo/${atual.livro.id}/${atual.capitulo}`);
-    const dados = await res.json();
-    if (pedido !== `${atual.livro.id}.${atual.capitulo}`) return; // usuário já trocou de capítulo
-    if (!res.ok) throw new Error(dados.erro);
-    atual.versiculos = dados.versiculos;
+    const versiculos = await buscarCapitulo(pedido.livro, pedido.capitulo);
+    if (pedido !== atual) return; // a pessoa já trocou de capítulo
+    atual.versiculos = versiculos;
     el.texto.innerHTML = "";
-    for (const v of atual.versiculos) {
+    for (const v of versiculos) {
       const span = document.createElement("span");
       span.className = "versiculo";
       span.dataset.numero = v.numero;
@@ -83,16 +110,19 @@ async function carregarCapitulo(livroId, capitulo) {
       el.texto.append(span);
     }
   } catch (err) {
-    el.texto.innerHTML = `<p class="erro">${escapar(err.message || "Erro ao carregar o capítulo.")}</p>`;
+    if (pedido !== atual) return;
+    const offline = !navigator.onLine ? " Você está sem internet e este capítulo ainda não foi aberto antes." : "";
+    el.texto.innerHTML = `<p class="erro">${escapar(err.message)}${offline}</p>`;
   }
 }
 
 function mudarCapitulo(delta) {
-  let i = livros.indexOf(atual.livro);
+  let i = LIVROS.indexOf(atual.livro);
   let cap = atual.capitulo + delta;
-  if (cap < 1 && i > 0) { i--; cap = livros[i].capitulos; }
-  else if (cap > atual.livro.capitulos && i < livros.length - 1) { i++; cap = 1; }
-  carregarCapitulo(livros[i].id, cap);
+  if (cap < 1 && i > 0) { i--; cap = LIVROS[i].capitulos; }
+  else if (cap > atual.livro.capitulos && i < LIVROS.length - 1) { i++; cap = 1; }
+  carregarCapitulo(LIVROS[i].id, cap);
+  el.texto.parentElement.scrollTo?.({ top: 0 });
 }
 
 // ---------- Seleção de versículos ----------
@@ -153,24 +183,20 @@ async function pedirEstudo() {
   definirOcupado(true);
   let texto = "";
   try {
-    const res = await fetch("/api/estudo", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ referencia: sessao.referencia, texto: sessao.texto, historico: sessao.historico }),
-    });
-    if (!res.ok) {
-      const dados = await res.json().catch(() => ({}));
-      throw new Error(dados.erro || `Erro ${res.status}`);
-    }
-    const leitor = res.body.getReader();
-    const decodificador = new TextDecoder();
-    for (;;) {
-      const { done, value } = await leitor.read();
-      if (done) break;
-      texto += decodificador.decode(value, { stream: true });
-      div.innerHTML = marked.parse(texto);
-    }
+    const mensagens = montarMensagens(sessao);
+    const motivo = await estudar(
+      mensagens,
+      (trecho) => {
+        texto += trecho;
+        div.innerHTML = marked.parse(texto);
+      },
+      { apiKey: chaveApi() },
+    );
+    if (motivo === "refusal") texto += "\n\n> Não foi possível responder a esta pergunta. Tente reformulá-la.";
+    if (motivo === "max_tokens") texto += "\n\n> A resposta foi interrompida por ser longa demais.";
+    div.innerHTML = marked.parse(texto);
     sessao.historico.push({ role: "assistant", content: texto });
+
     const salvar = document.createElement("button");
     salvar.className = "salvar secundario";
     salvar.type = "button";
@@ -182,7 +208,7 @@ async function pedirEstudo() {
     });
     div.append(salvar);
   } catch (err) {
-    div.innerHTML = `<p class="erro">${escapar(err.message)}</p>`;
+    div.innerHTML = `<p class="erro">${escapar(explicarErro(err))}</p>`;
     // Desfaz a pergunta que falhou, para o histórico continuar alternando user/assistant.
     if (sessao.historico.at(-1)?.role === "user") sessao.historico.pop();
   } finally {
@@ -193,15 +219,16 @@ async function pedirEstudo() {
 
 function iniciarEstudo() {
   if (selecionados.size === 0 || ocupado) return;
-  const nums = [...selecionados].sort((a, b) => a - b);
+  if (!chaveApi()) return abrirConfiguracoes();
   const texto = atual.versiculos
     .filter((v) => selecionados.has(v.numero))
     .map((v) => `${v.numero} ${v.texto}`)
     .join(" ");
-  sessao = { referencia: referenciaSelecionada(), texto, historico: [], livro: atual.livro.id, capitulo: atual.capitulo, versiculos: nums };
+  sessao = { referencia: referenciaSelecionada(), texto, historico: [] };
   el.conversa.innerHTML = "";
   adicionarMensagem("usuario", `Estudar ${sessao.referencia}`);
   el.form.hidden = false;
+  el.conversa.scrollIntoView({ behavior: "smooth", block: "start" });
   pedirEstudo();
 }
 
@@ -209,6 +236,7 @@ function enviarPergunta(evento) {
   evento.preventDefault();
   const pergunta = el.pergunta.value.trim();
   if (!pergunta || !sessao || ocupado) return;
+  if (!chaveApi()) return abrirConfiguracoes();
   el.pergunta.value = "";
   adicionarMensagem("usuario", pergunta);
   sessao.historico.push({ role: "user", content: pergunta });
@@ -225,12 +253,12 @@ function salvarEstudo() {
 }
 
 function abrirEstudo(estudo) {
-  sessao = { ...estudo, historico: [...estudo.historico] };
+  sessao = { referencia: estudo.referencia, texto: estudo.texto, historico: [...estudo.historico] };
   el.conversa.innerHTML = "";
   adicionarMensagem("usuario", `Estudar ${estudo.referencia}`);
   for (const m of estudo.historico) adicionarMensagem(m.role === "user" ? "usuario" : "claude", m.content);
   el.form.hidden = false;
-  el.conversa.scrollIntoView({ behavior: "smooth" });
+  el.conversa.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderizarSalvos() {
@@ -259,12 +287,11 @@ function renderizarSalvos() {
 }
 
 // ---------- Início ----------
-async function iniciar() {
-  livros = await (await fetch("/api/livros")).json();
+function iniciar() {
   for (const [grupo, rotulo] of [["AT", "Antigo Testamento"], ["NT", "Novo Testamento"]]) {
     const og = document.createElement("optgroup");
     og.label = rotulo;
-    for (const l of livros.filter((x) => x.testamento === grupo)) og.append(new Option(l.nome, l.id));
+    for (const l of LIVROS.filter((x) => x.testamento === grupo)) og.append(new Option(l.nome, l.id));
     el.livro.append(og);
   }
 
@@ -283,11 +310,33 @@ async function iniciar() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); el.form.requestSubmit(); }
   });
 
+  el.abrirConfig.addEventListener("click", abrirConfiguracoes);
+  $("aviso-config").addEventListener("click", abrirConfiguracoes);
+  el.configForm.addEventListener("submit", (e) => {
+    const chave = el.chave.value.trim();
+    if (e.submitter?.value !== "salvar") return; // "Fechar"
+    if (!chave) return;
+    if (!chave.startsWith("sk-ant-")) {
+      e.preventDefault();
+      el.statusChave.textContent = "Essa chave não parece certa: ela deve começar com sk-ant-";
+      return;
+    }
+    armazenamento.gravar("chaveApi", chave);
+    atualizarStatusChave();
+  });
+  el.apagarChave.addEventListener("click", () => {
+    armazenamento.apagar("chaveApi");
+    atualizarStatusChave();
+  });
+
+  atualizarStatusChave();
   renderizarSalvos();
   const ultima = armazenamento.ler("ultimaLeitura", { livro: "JHN", capitulo: 3 });
-  await carregarCapitulo(ultima.livro, ultima.capitulo);
+  carregarCapitulo(ultima.livro, ultima.capitulo);
+
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    navigator.serviceWorker.register("./sw.js").catch(() => { /* sem modo offline */ });
+  }
 }
 
-iniciar().catch((err) => {
-  el.texto.innerHTML = `<p class="erro">${escapar(err.message)}</p>`;
-});
+iniciar();

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Estudo Bíblico</title>
+  <meta name="description" content="Estudo bíblico com IA: contexto, palavras no original, referências e tradições.">
+  <meta name="theme-color" content="#8a5a2b">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icones/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Estudo Bíblico">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topo">
+    <div>
+      <h1>Estudo Bíblico</h1>
+      <p class="sub">Toque nos versículos que quer estudar e peça uma explicação.</p>
+    </div>
+    <button id="abrir-config" type="button" class="secundario" aria-label="Configurações">⚙️</button>
+  </header>
+
+  <div id="aviso-chave" class="aviso" hidden>
+    Para usar o estudo com IA, cole sua chave da API do Claude.
+    <button id="aviso-config" type="button">Configurar</button>
+  </div>
+
+  <main class="layout">
+    <section class="leitor" aria-label="Texto bíblico">
+      <div class="seletor">
+        <label>Livro
+          <select id="livro"></select>
+        </label>
+        <label>Capítulo
+          <select id="capitulo"></select>
+        </label>
+        <div class="nav-cap">
+          <button id="anterior" type="button" aria-label="Capítulo anterior">‹</button>
+          <button id="proximo" type="button" aria-label="Próximo capítulo">›</button>
+        </div>
+      </div>
+      <h2 id="titulo-cap"></h2>
+      <div id="texto" class="texto" aria-live="polite"></div>
+      <p class="fonte">Tradução João Ferreira de Almeida (domínio público), via bible-api.com.</p>
+    </section>
+
+    <section class="estudo" aria-label="Estudo">
+      <div id="selecao" class="selecao vazio">
+        <span id="selecao-ref">Nenhum versículo selecionado</span>
+        <div class="acoes">
+          <button id="limpar" type="button" class="secundario">Limpar</button>
+          <button id="estudar" type="button" disabled>Estudar passagem</button>
+        </div>
+      </div>
+
+      <div id="conversa" class="conversa"></div>
+
+      <form id="pergunta-form" class="pergunta" hidden>
+        <textarea id="pergunta" rows="2" placeholder="Faça uma pergunta sobre esta passagem…" required></textarea>
+        <button type="submit" id="enviar">Perguntar</button>
+      </form>
+
+      <details class="salvos">
+        <summary>Meus estudos salvos (<span id="qtd-salvos">0</span>)</summary>
+        <ul id="lista-salvos"></ul>
+      </details>
+    </section>
+  </main>
+
+  <dialog id="config">
+    <form id="config-form" method="dialog">
+      <h2>Configurações</h2>
+      <p>O estudo com IA usa o Claude, e para isso o app precisa da <strong>sua chave da API</strong>.</p>
+      <ol class="passos">
+        <li>Entre em <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> e crie uma conta, se ainda não tiver.</li>
+        <li>Em <em>Billing</em>, adicione um pouco de crédito.</li>
+        <li>Em <em>API Keys</em>, clique em <em>Create Key</em> e copie a chave. Ela começa com <code>sk-ant-</code>.</li>
+        <li>Cole a chave abaixo e toque em Salvar.</li>
+      </ol>
+      <label for="chave">Chave da API</label>
+      <input id="chave" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+      <p id="status-chave" class="status"></p>
+      <p class="nota">A chave fica guardada <strong>só neste aparelho</strong> (no navegador). Ela não vai para o GitHub nem para mais ninguém. Não compartilhe a chave com outras pessoas.</p>
+      <div class="acoes-dialogo">
+        <button id="apagar-chave" type="button" class="secundario">Apagar chave</button>
+        <span class="espaco"></span>
+        <button value="fechar" class="secundario" formnovalidate>Fechar</button>
+        <button value="salvar">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
