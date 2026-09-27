@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Estudo Bíblico</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topo">
+    <h1>Estudo Bíblico</h1>
+    <p class="sub">Toque nos versículos que quer estudar e peça uma explicação.</p>
+  </header>
+
+  <main class="layout">
+    <section class="leitor" aria-label="Texto bíblico">
+      <div class="seletor">
+        <label>Livro
+          <select id="livro"></select>
+        </label>
+        <label>Capítulo
+          <select id="capitulo"></select>
+        </label>
+        <div class="nav-cap">
+          <button id="anterior" type="button" aria-label="Capítulo anterior">‹</button>
+          <button id="proximo" type="button" aria-label="Próximo capítulo">›</button>
+        </div>
+      </div>
+      <h2 id="titulo-cap"></h2>
+      <div id="texto" class="texto" aria-live="polite"></div>
+      <p class="fonte">Tradução João Ferreira de Almeida (domínio público), via bible-api.com.</p>
+    </section>
+
+    <section class="estudo" aria-label="Estudo">
+      <div id="selecao" class="selecao vazio">
+        <span id="selecao-ref">Nenhum versículo selecionado</span>
+        <div class="acoes">
+          <button id="limpar" type="button" class="secundario">Limpar</button>
+          <button id="estudar" type="button" disabled>Estudar passagem</button>
+        </div>
+      </div>
+
+      <div id="conversa" class="conversa"></div>
+
+      <form id="pergunta-form" class="pergunta" hidden>
+        <textarea id="pergunta" rows="2" placeholder="Faça uma pergunta sobre esta passagem…" required></textarea>
+        <button type="submit" id="enviar">Perguntar</button>
+      </form>
+
+      <details class="salvos">
+        <summary>Meus estudos salvos (<span id="qtd-salvos">0</span>)</summary>
+        <ul id="lista-salvos"></ul>
+      </details>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
