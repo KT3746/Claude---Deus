@@ -15,10 +15,6 @@
     "url": "https://github.com/KT3746/Claude---Deus/issues"
   },
   "homepage": "https://github.com/KT3746/Claude---Deus#readme",
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.128.0",
-    "marked": "^18.0.14"
-  },
   "type": "module",
   "private": true,
   "engines": {

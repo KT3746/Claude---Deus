@@ -1,6 +1,6 @@
 // Modo offline: guarda o app e os capítulos já abertos neste aparelho.
-// O estudo com IA sempre precisa de internet e nunca passa por aqui.
-const CACHE = "estudo-biblico-v1";
+// O estudo acontece no Claude, fora do app, e precisa de internet.
+const CACHE = "estudo-biblico-v2";
 const APP = [
   "./", "index.html", "app.js", "style.css", "manifest.webmanifest",
   "icones/icone.svg", "icones/icone-192.png", "icones/icone-512.png", "icones/apple-touch-icon.png",

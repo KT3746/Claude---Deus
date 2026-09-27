@@ -15,17 +15,9 @@
 </head>
 <body>
   <header class="topo">
-    <div>
-      <h1>Estudo Bíblico</h1>
-      <p class="sub">Toque nos versículos que quer estudar e peça uma explicação.</p>
-    </div>
-    <button id="abrir-config" type="button" class="secundario" aria-label="Configurações">⚙️</button>
+    <h1>Estudo Bíblico</h1>
+    <p class="sub">Toque nos versículos que quer estudar e abra o estudo no Claude.</p>
   </header>
-
-  <div id="aviso-chave" class="aviso" hidden>
-    Para usar o estudo com IA, cole sua chave da API do Claude.
-    <button id="aviso-config" type="button">Configurar</button>
-  </div>
 
   <main class="layout">
     <section class="leitor" aria-label="Texto bíblico">
@@ -49,48 +41,27 @@
     <section class="estudo" aria-label="Estudo">
       <div id="selecao" class="selecao vazio">
         <span id="selecao-ref">Nenhum versículo selecionado</span>
-        <div class="acoes">
-          <button id="limpar" type="button" class="secundario">Limpar</button>
-          <button id="estudar" type="button" disabled>Estudar passagem</button>
-        </div>
+        <button id="limpar" type="button" class="secundario">Limpar</button>
       </div>
 
-      <div id="conversa" class="conversa"></div>
+      <label class="rotulo" for="pergunta">Pergunta extra (opcional)</label>
+      <textarea id="pergunta" rows="2" placeholder="Ex.: Como aplicar isso na minha família?"></textarea>
 
-      <form id="pergunta-form" class="pergunta" hidden>
-        <textarea id="pergunta" rows="2" placeholder="Faça uma pergunta sobre esta passagem…" required></textarea>
-        <button type="submit" id="enviar">Perguntar</button>
-      </form>
+      <a id="estudar" class="botao grande" href="https://claude.ai/new" target="_blank" rel="noopener" aria-disabled="true">Estudar no Claude</a>
+      <p id="status" class="status" role="status"></p>
 
-      <details class="salvos">
-        <summary>Meus estudos salvos (<span id="qtd-salvos">0</span>)</summary>
-        <ul id="lista-salvos"></ul>
+      <details class="ajuda" open>
+        <summary>Como funciona</summary>
+        <ol>
+          <li>Selecione um ou mais versículos tocando neles.</li>
+          <li>Toque em <strong>Estudar no Claude</strong>. O Claude abre com o pedido de estudo já escrito; é só enviar.</li>
+          <li>Se o pedido não aparecer escrito, toque na caixa de mensagem, escolha <strong>Colar</strong> e envie. O app já copiou o pedido.</li>
+          <li>Continue a conversa no Claude com as perguntas que quiser. O estudo fica salvo no histórico do Claude.</li>
+        </ol>
+        <p class="nota">Usa a sua assinatura do Claude. Não precisa de chave de API e não tem custo extra.</p>
       </details>
     </section>
   </main>
-
-  <dialog id="config">
-    <form id="config-form" method="dialog">
-      <h2>Configurações</h2>
-      <p>O estudo com IA usa o Claude, e para isso o app precisa da <strong>sua chave da API</strong>.</p>
-      <ol class="passos">
-        <li>Entre em <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> e crie uma conta, se ainda não tiver.</li>
-        <li>Em <em>Billing</em>, adicione um pouco de crédito.</li>
-        <li>Em <em>API Keys</em>, clique em <em>Create Key</em> e copie a chave. Ela começa com <code>sk-ant-</code>.</li>
-        <li>Cole a chave abaixo e toque em Salvar.</li>
-      </ol>
-      <label for="chave">Chave da API</label>
-      <input id="chave" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
-      <p id="status-chave" class="status"></p>
-      <p class="nota">A chave fica guardada <strong>só neste aparelho</strong> (no navegador). Ela não vai para o GitHub nem para mais ninguém. Não compartilhe a chave com outras pessoas.</p>
-      <div class="acoes-dialogo">
-        <button id="apagar-chave" type="button" class="secundario">Apagar chave</button>
-        <span class="espaco"></span>
-        <button value="fechar" class="secundario" formnovalidate>Fechar</button>
-        <button value="salvar">Salvar</button>
-      </div>
-    </form>
-  </dialog>
 
   <script type="module" src="app.js"></script>
 </body>

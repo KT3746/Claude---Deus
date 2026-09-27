@@ -104,58 +104,33 @@ h2 { font-family: Georgia, serif; margin: 16px 0 8px; }
 #selecao-ref { font-weight: 600; }
 .acoes { display: flex; gap: 8px; }
 
-.conversa { margin-top: 12px; display: flex; flex-direction: column; gap: 12px; }
-.msg { overflow-wrap: anywhere; }
-.msg.usuario { align-self: flex-end; background: var(--usuario); padding: 8px 12px; border-radius: 12px; max-width: 90%; white-space: pre-wrap; }
-.msg.claude h2 { font-size: 1.1rem; margin: 18px 0 6px; color: var(--destaque); }
-.msg.claude h3 { font-size: 1rem; }
-.msg.claude blockquote { margin: 8px 0; padding: 4px 12px; border-left: 3px solid var(--destaque); color: var(--suave); }
-.msg.claude.digitando::after { content: "▍"; animation: pisca 1s steps(1) infinite; color: var(--destaque); }
-@keyframes pisca { 50% { opacity: 0; } }
-.salvar { display: block; margin-top: 8px; font-size: .85rem; padding: 4px 10px; }
-
-.pergunta { display: flex; gap: 8px; margin-top: 16px; align-items: end; }
-.pergunta textarea { flex: 1; resize: vertical; min-width: 0; }
-
-.salvos { margin-top: 24px; border-top: 1px solid var(--borda); padding-top: 12px; }
-.salvos summary { cursor: pointer; color: var(--suave); }
-.salvos ul { list-style: none; padding: 0; margin: 8px 0 0; }
-.salvos li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--borda); }
-.salvos li button { padding: 2px 8px; font-size: .8rem; }
-.salvos .abrir { background: none; border: none; color: var(--destaque); padding: 0; text-align: left; }
-
-/* ---------- Cabeçalho, aviso e configurações ---------- */
-.topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-#abrir-config { font-size: 1.2rem; padding: 6px 10px; }
-.aviso {
-  max-width: 1200px; margin: 4px auto 0; padding: 10px 16px;
-  display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;
-  background: var(--destaque-fundo); border-radius: 8px;
+/* ---------- Pedido de estudo ---------- */
+.rotulo { display: block; margin: 16px 0 4px; font-size: .9rem; color: var(--suave); }
+#pergunta { width: 100%; resize: vertical; }
+.botao {
+  display: block; text-align: center; text-decoration: none;
+  background: var(--destaque); color: var(--papel);
+  border-radius: 10px; padding: 12px 16px; margin-top: 16px; font-weight: 600;
 }
-@media (max-width: 1232px) { .aviso { margin: 4px 16px 0; } }
-.aviso[hidden] { display: none; }
-
-dialog {
-  width: min(520px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-  border: 1px solid var(--borda); border-radius: 12px;
-  background: var(--papel); color: var(--tinta);
-  padding: 20px;
-}
-dialog::backdrop { background: rgb(0 0 0 / .45); }
-dialog h2 { margin-top: 0; }
-dialog a { color: var(--destaque); }
-.passos { padding-left: 20px; }
-.passos li { margin-bottom: 4px; }
-dialog label { display: block; font-weight: 600; margin-top: 12px; }
-dialog input {
-  width: 100%; margin-top: 4px; font: inherit; color: inherit;
-  background: var(--fundo); border: 1px solid var(--borda); border-radius: 8px; padding: 10px;
-}
-.status { min-height: 1.4em; color: var(--suave); font-size: .9rem; }
+.botao.grande { font-size: 1.1rem; }
+.botao[aria-disabled="true"] { opacity: .45; }
+.status { min-height: 1.4em; color: var(--suave); font-size: .9rem; margin: 8px 0 0; }
+.ajuda { margin-top: 20px; border-top: 1px solid var(--borda); padding-top: 12px; }
+.ajuda summary { cursor: pointer; color: var(--suave); }
+.ajuda ol { padding-left: 20px; }
+.ajuda li { margin-bottom: 6px; }
 .nota { font-size: .85rem; color: var(--suave); }
-.acoes-dialogo { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.acoes-dialogo .espaco { flex: 1; }
-#apagar-chave[hidden] { display: none; }
 body { padding-bottom: env(safe-area-inset-bottom); }
+.versiculo { -webkit-tap-highlight-color: transparent; }
+.versiculo:focus { outline: none; }
+.versiculo:focus-visible { outline: 2px solid var(--destaque); }
+
+/* No celular o botão fica flutuando embaixo assim que há versículos selecionados. */
+@media (max-width: 860px) {
+  body { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+  #estudar:not([aria-disabled]) {
+    position: fixed; left: 16px; right: 16px; z-index: 10;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    margin: 0; box-shadow: 0 6px 20px rgb(0 0 0 / .25);
+  }
+}
