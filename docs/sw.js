@@ -1,6 +1,9 @@
 // Modo offline: guarda o app e os capítulos já abertos neste aparelho.
 // O estudo acontece no Claude, fora do app, e precisa de internet.
 const CACHE = "estudo-biblico-v2";
+// O texto bíblico fica num cache à parte, que não é apagado quando o app muda de versão:
+// assim os capítulos já abertos continuam disponíveis sem internet depois de uma atualização.
+const BIBLIA = "biblia-almeida";
 const APP = [
   "./", "index.html", "app.js", "style.css", "manifest.webmanifest",
   "icones/icone.svg", "icones/icone-192.png", "icones/icone-512.png", "icones/apple-touch-icon.png",
@@ -13,7 +16,7 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
-      .then((nomes) => Promise.all(nomes.filter((n) => n !== CACHE).map((n) => caches.delete(n))))
+      .then((nomes) => Promise.all(nomes.filter((n) => n !== CACHE && n !== BIBLIA).map((n) => caches.delete(n))))
       .then(() => self.clients.claim()),
   );
 });
@@ -26,8 +29,8 @@ self.addEventListener("fetch", (e) => {
   // Texto bíblico não muda: usa o que já está guardado, senão busca e guarda.
   if (url.hostname === "bible-api.com") {
     e.respondWith(
-      caches.open(CACHE).then(async (c) => {
-        const guardado = await c.match(request);
+      caches.open(BIBLIA).then(async (c) => {
+        const guardado = (await c.match(request)) ?? (await caches.match(request));
         if (guardado) return guardado;
         const resposta = await fetch(request);
         if (resposta.ok) c.put(request, resposta.clone());
