@@ -12,6 +12,7 @@ const el = {
   titulo: $("titulo-cap"), texto: $("texto"),
   selecao: $("selecao"), selecaoRef: $("selecao-ref"), limpar: $("limpar"),
   pergunta: $("pergunta"), estudar: $("estudar"), status: $("status"),
+  menor: $("menor"), maior: $("maior"),
 };
 
 // ---------- Armazenamento local (fica só neste aparelho) ----------
@@ -165,6 +166,19 @@ function aoEstudar(evento) {
   );
 }
 
+// ---------- Tamanho da letra (fica salvo no aparelho) ----------
+const ESCALAS = [0.85, 1, 1.15, 1.3, 1.5, 1.75];
+function aplicarEscala(i) {
+  const indice = Math.min(ESCALAS.length - 1, Math.max(0, i));
+  document.documentElement.style.setProperty("--escala-texto", String(ESCALAS[indice]));
+  el.menor.disabled = indice === 0;
+  el.maior.disabled = indice === ESCALAS.length - 1;
+  armazenamento.gravar("tamanhoTexto", indice);
+  return indice;
+}
+const salvo = Number(armazenamento.ler("tamanhoTexto", 1));
+let escala = aplicarEscala(Number.isInteger(salvo) ? salvo : 1);
+
 // ---------- Início ----------
 function iniciar() {
   for (const [grupo, rotulo] of [["AT", "Antigo Testamento"], ["NT", "Novo Testamento"]]) {
@@ -183,6 +197,8 @@ function iniciar() {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); alternarVersiculo(e.target); }
   });
   el.limpar.addEventListener("click", limparSelecao);
+  el.menor.addEventListener("click", () => { escala = aplicarEscala(escala - 1); });
+  el.maior.addEventListener("click", () => { escala = aplicarEscala(escala + 1); });
   el.pergunta.addEventListener("input", atualizarPedido);
   el.estudar.addEventListener("click", aoEstudar);
 

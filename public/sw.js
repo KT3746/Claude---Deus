@@ -1,6 +1,6 @@
 // Modo offline: guarda o app e os capítulos já abertos neste aparelho.
 // O estudo acontece no Claude, fora do app, e precisa de internet.
-const CACHE = "estudo-biblico-v2";
+const CACHE = "estudo-biblico-v3";
 // O texto bíblico fica num cache à parte, que não é apagado quando o app muda de versão:
 // assim os capítulos já abertos continuam disponíveis sem internet depois de uma atualização.
 const BIBLIA = "biblia-almeida";
